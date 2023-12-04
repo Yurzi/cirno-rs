@@ -1,0 +1,4 @@
+ls /dev
+ls /proc
+ls /etc
+ls /home
