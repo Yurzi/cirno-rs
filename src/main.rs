@@ -51,14 +51,16 @@ impl Task {
             count += 1;
         }
 
-        Task {
+        let mut res = Task {
             name: name.to_string(),
             prog: prog.clone(),
             args: args.clone(),
             handler: Command::new(prog),
             child: None,
             start_time: SystemTime::now(),
-        }
+        };
+        res.handler.args(args);
+        res
     }
 
     fn spawn(&mut self) {
@@ -66,7 +68,7 @@ impl Task {
             self.stop().expect("Failed to respawn process");
         }
 
-        let p = match self.handler.args(&self.args).spawn() {
+        let p = match self.handler.spawn() {
             Ok(p) => Some(p),
             Err(e) => {
                 println!("Failed to spawn process: {}", e);
@@ -123,7 +125,7 @@ impl Task {
                         let elapsed = self.start_time.elapsed().unwrap_or(Duration::from_secs(0));
                         if elapsed.as_secs() > timeout as u64 {
                             println!("task: {} timeout", self.name);
-                            kill_process(Pid::from_child(&child),Signal::Term)?;
+                            kill_process(Pid::from_child(&child),Signal::Alarm)?;
                             // loop wait
                             loop {
                                 match child.try_wait() {
@@ -131,7 +133,7 @@ impl Task {
                                         return Ok(Some(status));
                                     }
                                     Ok(None) => {
-                                        kill_process(Pid::from_child(&child),Signal::Term)?;
+                                        kill_process(Pid::from_child(&child),Signal::Alarm)?;
                                         std::thread::sleep(Duration::from_secs(1));
                                     }
                                     Err(e) => {
@@ -253,7 +255,7 @@ impl Scheduler {
                         let mut task = self.todo_tasks.pop().unwrap();
                         task.stdout_from_file(Path::new(&format!("run/{}.txtlog", task.name)));
                         task.spawn();
-                        println!("task: {} started", task.name);
+                        println!("task: {} started", task);
                         self.runing_tasks.push(task);
                     }
                     // sleep
@@ -267,6 +269,7 @@ impl Scheduler {
                     // try to stop one task and sleep
                     if self.runing_tasks.len() > 0 {
                         let mut task = self.runing_tasks.pop().unwrap();
+                        println!("task: {} stopped", task.name);
                         task.stop().expect("Failed to stop task");
                         self.todo_tasks.push(task);
                     }
