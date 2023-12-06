@@ -324,7 +324,6 @@ fn gen_tasks_from_file(filename: &Path) -> Vec<Task> {
         return Vec::new();
     }
     let mut task_list = Vec::new();
-    let lines: Vec<&str> = contents.split("\n").collect();
     for line in contents.split("\n") {
         let name: &str = line
             .split_whitespace()
