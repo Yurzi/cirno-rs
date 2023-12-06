@@ -320,9 +320,11 @@ fn init_runtime(dirname: &str) {
 fn gen_tasks_from_file(filename: &Path) -> Vec<Task> {
     let contents = fs::read_to_string(filename).expect("Failed to read task list");
     let contents = contents.trim();
+    if contents.len() == 0 {
+        return Vec::new();
+    }
     let mut task_list = Vec::new();
     let lines: Vec<&str> = contents.split("\n").collect();
-    println!("{:?}", lines);
     for line in contents.split("\n") {
         let name: &str = line
             .split_whitespace()
