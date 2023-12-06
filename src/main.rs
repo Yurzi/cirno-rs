@@ -36,6 +36,16 @@ impl Display for Task {
     }
 }
 
+impl Drop for Task {
+    fn drop(&mut self) {
+        let ret= self.stop();
+        if let Err(e) = ret {
+            println!("Failed to stop task: {}, Error: {}", self.name, e);
+        }
+    }
+    
+}
+
 impl Task {
     fn new(name: &str, cmd: &str) -> Task {
         let mut count = 0;
