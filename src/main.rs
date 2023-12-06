@@ -109,7 +109,7 @@ impl Task {
                         // kill it
                         kill_process(Pid::from_child(&child),Signal::Kill)?;
                         // wait for free
-                        return child.wait()?
+                        return Ok(Some(child.wait()?));
                     }
                 }
             }
