@@ -7,6 +7,7 @@ use std::path::Path;
 use std::process::{Child, Command, Stdio};
 use std::time::{SystemTime, Duration};
 use sysinfo::{System, SystemExt};
+use cirno_rs::process::kill_process_tree;
 
 
 #[derive(Debug)]
@@ -41,7 +42,7 @@ impl Drop for Task {
         let child = self.child.take();
         // kill it
         if let Some(mut child) = child {
-            child.kill().expect("Failed to drop task");
+            kill_process_tree(Pid::from_child(&child), Signal::Kill).expect("Failed to drop task");
             child.wait().expect("Failed to drop task");
         }
     }
@@ -119,7 +120,7 @@ impl Task {
                             }
                         }
                         // kill it
-                        kill_process(Pid::from_child(&child),Signal::Kill)?;
+                        kill_process_tree(Pid::from_child(&child),Signal::Kill)?;
                         // wait for free
                         return Ok(Some(child.wait()?));
                     }
@@ -286,7 +287,7 @@ impl Scheduler {
                 }
                 CirnoOpinion::Bad => {
                     // try to stop one task and sleep
-                    if self.runing_tasks.len() > 0 {
+                    if self.runing_tasks.len() > 1 {
                         let mut task = self.runing_tasks.pop().unwrap();
                         println!("task: {} stopped", task.name);
                         task.stop().expect("Failed to stop task");
