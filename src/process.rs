@@ -18,10 +18,22 @@ pub fn kill_process_tree(pid: Pid, sig: Signal) -> std::io::Result<()> {
     }
 
     for process in process_to_kill {
+        if !is_exist(process) {
+            continue;
+        }
         kill_process(process, sig)?;
     }
 
     Ok(())
+}
+
+pub fn is_exist(pid: Pid) -> bool {
+    let pid = pid.as_raw_nonzero().get();
+    match  std::fs::read_to_string(format!("/proc/{}/stat", pid)) {
+        Ok(_) => true,
+        Err(_) => false,
+        
+    }
 }
 
 pub fn get_processes() -> Vec<Pid> {
