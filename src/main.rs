@@ -91,21 +91,25 @@ impl Task {
                     }
                     None => {
                         kill_process(Pid::from_child(&child),Signal::Term)?;
-                        // loop wait
-                        loop {
+                        // try three more times 
+                        for _ in 0..3 {
+                            std::thread::sleep(Duration::from_secs(1));
                             match child.try_wait() {
                                 Ok(Some(status)) => {
                                     return Ok(Some(status));
                                 }
                                 Ok(None) => {
                                     kill_process(Pid::from_child(&child),Signal::Term)?;
-                                    std::thread::sleep(Duration::from_secs(1));
                                 }
                                 Err(e) => {
                                     return Err(e);
                                 }
                             }
                         }
+                        // kill it
+                        kill_process(Pid::from_child(&child),Signal::Kill)?;
+                        // wait for free
+                        return child.wait()?
                     }
                 }
             }
@@ -123,24 +127,27 @@ impl Task {
                     }
                     Ok(None) => {
                         let elapsed = self.start_time.elapsed().unwrap_or(Duration::from_secs(0));
-                        if elapsed.as_secs() > timeout as u64 {
+                        if elapsed.as_secs() > timeout as u64 && timeout > 0 {
                             println!("task: {} timeout", self.name);
                             kill_process(Pid::from_child(&child),Signal::Alarm)?;
-                            // loop wait
-                            loop {
+
+                            // try three more times
+                            for _ in 0..3 {
+                                std::thread::sleep(Duration::from_secs(1));
                                 match child.try_wait() {
                                     Ok(Some(status)) => {
                                         return Ok(Some(status));
                                     }
                                     Ok(None) => {
                                         kill_process(Pid::from_child(&child),Signal::Alarm)?;
-                                        std::thread::sleep(Duration::from_secs(1));
                                     }
                                     Err(e) => {
                                         return Err(e);
                                     }
                                 }
                             }
+                            // just return
+                            return Ok(None);
                         } else {
                             return Ok(None);
                         }
