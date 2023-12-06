@@ -38,9 +38,11 @@ impl Display for Task {
 
 impl Drop for Task {
     fn drop(&mut self) {
-        let ret= self.stop();
-        if let Err(e) = ret {
-            println!("Failed to stop task: {}, Error: {}", self.name, e);
+        let child = self.child.take();
+        // kill it
+        if let Some(mut child) = child {
+            child.kill().expect("Failed to drop task");
+            child.wait().expect("Failed to drop task");
         }
     }
     
