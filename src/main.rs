@@ -211,6 +211,8 @@ struct Scheduler {
     per_task_mem: usize,
     timeout: usize,
     force_task: usize,
+    load_max: f64,
+    load_min: f64,
 }
 
 impl Scheduler {
@@ -225,6 +227,8 @@ impl Scheduler {
             per_task_mem: 3,
             timeout: 7200,
             force_task: 1,
+            load_max: 1.0,
+            load_min: 0.8,
         }
     }
 
@@ -246,6 +250,14 @@ impl Scheduler {
 
     fn set_force_task(&mut self, force_task: usize) {
         self.force_task = force_task;
+    }
+
+    fn set_load_max(&mut self, load_max: f64) {
+        self.load_max = load_max;
+    }
+
+    fn set_load_min(&mut self, load_min: f64) {
+        self.load_min = load_min;
     }
 
     fn submit(&mut self, task: Task) {
@@ -314,9 +326,10 @@ impl Scheduler {
         }
 
         self.system.refresh_memory();
+        let load = self.system.load_average().five / self.system.cpus().len() as f64;
         let free_mem = (self.system.available_memory() / (1024 * 1024 * 1024))as usize;
 
-        if free_mem < self.reserved_mem {
+        if free_mem < self.reserved_mem || load > self.load_max {
             return CirnoOpinion::Bad;
         }
 
@@ -324,7 +337,7 @@ impl Scheduler {
             return CirnoOpinion::Normal;
         }
 
-        if free_mem >= (self.reserved_mem + self.per_task_mem) {
+        if free_mem >= (self.reserved_mem + self.per_task_mem) && load <= self.load_min {
             return CirnoOpinion::Health;
         }
 
@@ -373,6 +386,10 @@ struct CLIArgs {
     per_task_mem: usize,
     #[arg(short, long)]
     timeout: usize,
+    #[arg(long)]
+    load_max: Option<f64>,
+    #[arg(long)]
+    load_min: Option<f64>,
 }
 
 fn main() {
@@ -389,6 +406,12 @@ fn main() {
     scheduler.set_per_task_mem(cli.per_task_mem);
     scheduler.set_timeout(cli.timeout);
     scheduler.set_force_task(cli.force_task);
+    if let Some(load_max) = cli.load_max {
+        scheduler.set_load_max(load_max);
+    }
+    if let Some(load_min) = cli.load_min {
+        scheduler.set_load_min(load_min);
+    }
 
     for one in gen_tasks_from_file(Path::new(input_filename)) {
         scheduler.submit(one);
