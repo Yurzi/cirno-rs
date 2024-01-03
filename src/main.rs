@@ -144,9 +144,9 @@ impl Task {
                             println!("task: {} timeout", self.name);
                             kill_process(Pid::from_child(&child),Signal::Alarm)?;
 
-                            // try three more times
-                            for _ in 0..3 {
-                                std::thread::sleep(Duration::from_secs(1));
+                            // try ⑨ more times
+                            for _ in 0..9 {
+                                std::thread::sleep(Duration::from_millis(100));
                                 match child.try_wait() {
                                     Ok(Some(status)) => {
                                         return Ok(Some(status));
