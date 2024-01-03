@@ -227,8 +227,8 @@ impl Scheduler {
             per_task_mem: 3,
             timeout: 7200,
             force_task: 1,
-            load_max: 1.0,
-            load_min: 0.85,
+            load_max: 2.0,
+            load_min: 1.0,
         }
     }
 
@@ -328,7 +328,7 @@ impl Scheduler {
         self.system.refresh_memory();
         self.system.refresh_cpu();
         
-        let load = self.system.load_average().one / self.system.cpus().len() as f64;
+        let load = self.system.load_average().five / self.system.cpus().len() as f64;
         let free_mem = (self.system.available_memory() / (1024 * 1024 * 1024))as usize;
 
         if free_mem < self.reserved_mem || load > self.load_max {
