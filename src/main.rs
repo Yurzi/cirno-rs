@@ -210,6 +210,7 @@ struct Scheduler {
     reserved_mem: usize,
     per_task_mem: usize,
     timeout: usize,
+    force_task: usize,
 }
 
 impl Scheduler {
@@ -223,6 +224,7 @@ impl Scheduler {
             reserved_mem: 6,
             per_task_mem: 3,
             timeout: 7200,
+            force_task: 1,
         }
     }
 
@@ -240,6 +242,10 @@ impl Scheduler {
 
     fn set_per_task_mem(&mut self, mem: usize) {
         self.per_task_mem = mem;
+    }
+
+    fn set_force_task(&mut self, force_task: usize) {
+        self.force_task = force_task;
     }
 
     fn submit(&mut self, task: Task) {
@@ -287,7 +293,7 @@ impl Scheduler {
                 }
                 CirnoOpinion::Bad => {
                     // try to stop one task and sleep
-                    if self.runing_tasks.len() > 1 {
+                    if self.runing_tasks.len() > self.force_task {
                         let mut task = self.runing_tasks.pop().unwrap();
                         println!("task: {} stopped", task.name);
                         task.stop().expect("Failed to stop task");
@@ -358,6 +364,8 @@ struct CLIArgs {
     #[arg(short, long)]
     max_workers: usize,
     #[arg(short, long)]
+    force_task: usize,
+    #[arg(short, long)]
     sleep_duartion: usize,
     #[arg(short, long)]
     reserved_mem: usize,
@@ -380,6 +388,7 @@ fn main() {
     scheduler.set_reserved_mem(cli.reserved_mem);
     scheduler.set_per_task_mem(cli.per_task_mem);
     scheduler.set_timeout(cli.timeout);
+    scheduler.set_force_task(cli.force_task);
 
     for one in gen_tasks_from_file(Path::new(input_filename)) {
         scheduler.submit(one);
